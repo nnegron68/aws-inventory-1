@@ -72,6 +72,7 @@ config.logger.info('AWS Profile: ' + str(profile_name))
 config.regions = utils.get_aws_regions(profile_name)
 config.nb_regions = len(config.regions)
 
+
 # --- Inventory initialization
 
 inventory = {}
@@ -102,6 +103,8 @@ inv_dynamodb = {}
 inv_neptune = {}
 inv_redshift = {}
 inv_elasticache = {}
+# s3
+inv_s3 = {}
 
 # --- Progression counter initialization
 
@@ -433,13 +436,13 @@ if ('elasticache' in arguments):
 #               International Resources (no region)             #
 #################################################################
 
-# region_name = 'global'
+region_name = 'global'
 
 #
 # ----------------- S3 quick inventory
 #
-# if ('s3' in arguments):
-#     thread_list.append(awsthread.AWSThread('s3', storage.get_s3_inventory, ownerId, profile_name))
+if ('s3' in arguments):
+    thread_list.append(awsthread.AWSThread('s3', storage.get_s3_inventory, ownerId, profile_name))
 
 
 
@@ -486,33 +489,55 @@ for svc in arguments:
     else:
         # General case(s)
         # Lambda
-        inv_lambda["lambda"] = config.global_inventory["lambda"]
+        if 'lambda' in config.global_inventory:
+            inv_lambda["lambda"] = config.global_inventory["lambda"]
 
         # Lightsail instances
-        inv_lightsail["lightsail"] = config.global_inventory["lightsail"]
+        if 'lightsail' in config.global_inventory:
+            inv_lightsail["lightsail"] = config.global_inventory["lightsail"]
 
         # autoscaling
-        inv_autoscaling["autoscaling"] = config.global_inventory["autoscaling"]
+        if 'autoscaling' in config.global_inventory:
+            inv_autoscaling["autoscaling"] = config.global_inventory["autoscaling"]
 
         # EKS inventory
-        inv_eks["eks"] = config.global_inventory["eks"]
+        if 'eks' in config.global_inventory:
+            inv_eks["eks"] = config.global_inventory["eks"]
 
         # Batch jobs inventory
-        inv_batch["batch"] = config.global_inventory["batch"]
+        if 'batch' in config.global_inventory:
+            inv_batch["batch"] = config.global_inventory["batch"]
 
         # Storage: EFS Inventory, Glacier Inventory, Storage gateway inventory
-        inv_efs["efs"] = config.global_inventory["efs"]
-        inv_glacier["glacier"] = config.global_inventory["glacier"]
-        inv_storagegateway["storagegateway"] = config.global_inventory["storagegateway"]
+        if 'efs' in config.global_inventory:
+            inv_efs["efs"] = config.global_inventory["efs"]
+        
+        if 'glacier' in config.global_inventory:
+            inv_glacier["glacier"] = config.global_inventory["glacier"]
+        
+        if 'storagegateway' in config.global_inventory:
+            inv_storagegateway["storagegateway"] = config.global_inventory["storagegateway"]
 
         # Databases: RDS inventory, dynamodb inventory, neptune inventory, redshift inventory, elasticache Inventory
-        inv_rds["rds"] = config.global_inventory["rds"]
-        inv_dynamodb["dynamodb"] = config.global_inventory["dynamodb"]
-        inv_neptune["neptune"] = config.global_inventory["neptune"]
-        inv_redshift["redshift"] = config.global_inventory["redshift"]
-        inv_elastic["elasticache"] = config.global_inventory["elasticache"]
+        if 'rds' in config.global_inventory:
+            inv_rds["rds"] = config.global_inventory["rds"]
+        
+        if 'dynamodb' in config.global_inventory:
+            inv_dynamodb["dynamodb"] = config.global_inventory["dynamodb"]
+        
+        if 'neptune' in config.global_inventory:
+            inv_neptune["neptune"] = config.global_inventory["neptune"]
+        
+        if 'redshift' in config.global_inventory:
+            inv_redshift["redshift"] = config.global_inventory["redshift"]
+        
+        if 'elasticache' in config.global_inventory:
+            inv_elastic["elasticache"] = config.global_inventory["elasticache"]
+        
+        if 's3' in config.global_inventory:
+            inv_s3["s3"] = config.global_inventory["s3"]
 
-        # inventory[svc] = config.global_inventory[svc] # uncomment for this general/everything else. This may not work due to changes above.
+        # inventory[svc] = config.global_inventory[svc] # uncomment for this general/everything else
         # Security & IAM:
         # KMS Inventory
         # Cloud Directory
@@ -554,16 +579,17 @@ print("\n\nAll inventories are done. Duration: {:2f} seconds\n".format(execution
 #
 
 tracker = 0
-filenames = ['AWS_inv_ec2', 'AWS_ec2_network', 'AWS_ec2_ebs', 'AWS_ec2_vpcs', 'AWS_ec2_security_groups',
-'AWS_ec2_internet_gateways', 'AWS_ec2_nat_gateways', 'AWS_ec2_subnets', 'AWS_ec2_eips', 'AWS_ec2_egpu',
-'AWS_lambdas', 'AWS_elasticbeanstalk', 'AWS_ecs', 'AWS_lightsail', 'AWS_autoscaling', 'AWS_eks', 'AWS_batch',
-'AWS_efs', 'AWS_glacier', 'AWS_storagegateway', 'AWS_rds', 'AWS_dynamodb', 'AWS_neptune', 'AWS_redshift', 'AWS_elasticache',
-'AWS_general']
+timestr = time.strftime("-%Y-%m-%d")
+filenames = ['AWS_inv_ec2'+timestr, 'AWS_ec2_network'+timestr, 'AWS_ec2_ebs'+timestr, 'AWS_ec2_vpcs'+timestr, 'AWS_ec2_security_groups'+timestr,
+'AWS_ec2_internet_gateways'+timestr, 'AWS_ec2_nat_gateways'+timestr, 'AWS_ec2_subnets'+timestr, 'AWS_ec2_eips'+timestr, 'AWS_ec2_egpu'+timestr,
+'AWS_lambdas'+timestr, 'AWS_elasticbeanstalk'+timestr, 'AWS_ecs'+timestr, 'AWS_lightsail'+timestr, 'AWS_autoscaling'+timestr, 'AWS_eks'+timestr, 'AWS_batch'+timestr,
+'AWS_efs'+timestr, 'AWS_glacier'+timestr, 'AWS_storagegateway'+timestr, 'AWS_rds'+timestr, 'AWS_dynamodb'+timestr, 'AWS_neptune'+timestr, 'AWS_redshift'+timestr, 'AWS_elasticache'+timestr,
+'AWS_general'+timestr, 'AWS_s3'+timestr]
 
 inv_vars = [inv_ec2, inv_ec2_network_interfaces, inv_ec2_ebs, inv_ec2_vpcs, inv_ec2_security_groups, inv_ec2_internet_gateways,
 inv_ec2_nat_gateways, inv_ec2_subnets, inv_ec2_eips, inv_ec2_egpu, inv_lambda, inv_elastic, inv_ecs, inv_lightsail, inv_autoscaling,
 inv_eks, inv_batch, inv_efs, inv_glacier, inv_storagegateway, inv_rds, inv_dynamodb, inv_neptune, inv_redshift, inv_elasticache,
-inventory]
+inventory, inv_s3]
 
 for name in filenames:
     filename_json = name+".json".format(ownerId, config.timestamp)
@@ -572,24 +598,22 @@ for name in filenames:
         if inv_vars[tracker]:
             json_file = open(config.filepath+filename_json,'w+')
             json.dump(inv_vars[tracker], json_file, indent=4)
+            json_file.close()
     except IOError as e:
         config.logger.error("I/O error({0}): {1}".format(e.errno, e.strerror))
     tracker += 1
-
-json_file.close()
 
 #
 # ----------------- For Information: list of regions and availability zones
 #
 
-filename_regions_json = 'AWS_Regions_List.json'
+filename_regions_json = 'AWS_Regions_List'+timestr+'.json'
 try:
     json_file = open(config.filepath+filename_regions_json,'w+')
+    json_file.write(json.JSONEncoder().encode(config.regions))
+    json_file.close()
 except IOError as e:
     config.logger.error("I/O error({0}): {1}".format(e.errno, e.strerror))
-
-json_file.write(json.JSONEncoder().encode(config.regions))
-json_file.close()
 
 #
 # EOF
